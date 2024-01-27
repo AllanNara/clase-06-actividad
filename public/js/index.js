@@ -1,10 +1,46 @@
 const socket = io();
 
-socket.emit("message", "¡Hola, me estoy comunicando desde un websocket!")
+let user;
+let chatBox = document.getElementById("chat-box");
 
+Swal.fire({
+  title: "Identificate para ingresar",
+  input: "text",
+  text: "¡Ingresa tu nombre para identificarte en el chat!",
+  inputValidator: (value) => {
+    return !value && "¡Necesitas escribir un nombre de usuario para continuar!";
+  },
+  allowOutsideClick: false
+}).then((result) => {
+  user = result.value
+  socket.emit("user-login", user)
+});
 
-socket.on("evento_para_socket_individual", (data) => console.log(data));
+chatBox.addEventListener("keyup", (e) => {
+  if(e.key === "Enter") {
+    if(chatBox.value.trim().length) {
+      socket.emit("message", { user, message: chatBox.value })
+      chatBox.value = "";
+    }
+  }
+})
 
-socket.on("evento_para_todos_menos_el_socket_actual", (data) => console.log(data));
+// SOCKET
+socket.on("messageLogs", (data) => {
+  const log = document.getElementById("message-logs");
+  let messages = "";
+  data.forEach(msg => {
+    messages += `<p>${msg.user} dice: ${msg.message}</p>`
+  })
 
-socket.on("evento_para_todos", (data) => console.log(data))
+  log.innerHTML = messages;
+})
+
+socket.on("new-user", (data) => {
+  if(!user) return
+  Swal.fire({
+    text: `¡${data} se a conectado al chat!`,
+    toast: true,
+    position: "top-right"
+  })
+})

@@ -18,16 +18,18 @@ app.set("view engine", "handlebars");
 app.use(express.static(path.join(__dirname, "../public")));
 app.use("/", viewsRouter);
 
+const messages = [];
 io.on("connection", (socket) => {
   console.log("Nuevo cliente conectado: ", socket.id);
 
   socket.on("message", (data) => {
-    console.log(data)
+    messages.unshift(data);
+    io.emit("messageLogs", messages);
   })
 
-  socket.emit("evento_para_socket_individual", "Este mensaje sólo lo debe recibir el socket");
+  socket.on("user-login", (usr) => {
+    socket.emit("messageLogs", messages)
+    socket.broadcast.emit("new-user", usr)
+  })
 
-  socket.broadcast.emit("evento_para_todos_menos_el_socket_actual", "Este evento lo verán todos los sockets conectados, MENOS el socket actual desde qel que se envió el mensaje");
-
-  io.emit("evento_para_todos", "Este mensaje lo reciben todos los sockets conectados")
 })
